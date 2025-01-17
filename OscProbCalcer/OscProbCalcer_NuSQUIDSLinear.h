@@ -85,8 +85,17 @@ class OscProbCalcerNuSQUIDSLinear : public OscProbCalcerBase {
   /**
    * @brief Definition of oscillation parameters which are expected in this ProbGPU implementation
    */
-  enum OscParams{kTH12, kTH23, kTH13, kDM12, kDM23, kDCP, kPATHL, kDENS, kELECDENS, kNOscParams};
+  enum OscParams{kTH12, kTH23, kTH13, kDM12, kDM23, kDCP, kPATHL, kDENS, kELECDENS, kGammaStrength, kGammaEnergyDependence, kNOscParams};
  
+  /**
+ * @brief Return the BSM model corresponding to a particular string 
+ * 
+ * @param BSMModel String to convert to enum value
+ *
+ * @return Enum value describing the BSM model to use
+ */
+  int BSMModel_StrToInt(std::string BSMModel);
+
   /**
  * @brief Return the PMNS Matrix type corresponding to a particular string 
  * 
@@ -104,6 +113,17 @@ class OscProbCalcerNuSQUIDSLinear : public OscProbCalcerBase {
  * @return number of parameters needed for the type of PMNS matrix
  */
   int GetNOscParams(int OscType);
+
+/**
+  * @brief Different types of BSM models currently supported within the analysis
+  * More to be implemented later
+  */
+  enum BSMModelEnum{kSM=0, kDecoherence=1, kLIV=2, kNSI=3};
+
+  /**
+   * @brief Set the BSM model
+   */
+  int fBSMModel;
 
 /**
   * @brief Different types of PMNS matrices currently supported within the analysis
