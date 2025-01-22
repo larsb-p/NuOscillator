@@ -120,6 +120,10 @@ if(NOT DEFINED NuOscillator_Compiler_Flags)
   set(NuOscillator_Compiler_Flags "")
 endif()
 
+if(${NuOscillator_DEBUG} EQUAL 1)
+  set(NuOscillator_Compiler_Flags "-g")
+endif()
+
 separate_arguments(NuOscillator_Compiler_Flags)
 
 cmessage(STATUS "Set compiler options: ${NuOscillator_Compiler_Flags}")
