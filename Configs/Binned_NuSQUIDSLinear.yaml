@@ -10,7 +10,7 @@ Binned:
 
 OscProbCalcerSetup:
   ImplementationName: "NuSQUIDSLinear"
-  NusBSMModel: "Decoherence"
+  BSMModel: "Decoherence"
   ZenithAngle: "0.0"
   IntegrationStep: "500.0"
   NusRelativeError: "1.0e-5"

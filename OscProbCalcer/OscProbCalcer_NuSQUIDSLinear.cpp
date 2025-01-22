@@ -139,15 +139,9 @@ OscProbCalcerNuSQUIDSLinear::~OscProbCalcerNuSQUIDSLinear() {
 
 void OscProbCalcerNuSQUIDSLinear::SetupPropagator() {
 
-  nusquids::marray<double,1> E_range{fNEnergyPoints};
+  nusquids::marray<double,1> E_range{static_cast<size_t>(fNEnergyPoints)};
   for(int i=0; i < fNEnergyPoints; i++){
     E_range[i] = fEnergyArray[i]*units.GeV;
-  }
-
-  std::string OscProbCalcerNuSQUIDSLinear::set_bsm_model(std::string BSMModel) {
-    if ( BSMModel == "Decoherence" ) {
-      return kDecoherence;
-    }
   }
 
   //Here we define the trajectory that the particle follows and the object for more examples
@@ -157,9 +151,9 @@ void OscProbCalcerNuSQUIDSLinear::SetupPropagator() {
 
   double eps_mutau = 1.0e-2;
 
-  fBSMModel = BSM_StrToInt(bsm_model);
+  fBSMModel = BSMModel_StrToInt(bsm_model);
 
-  switch() {
+  switch(fBSMModel) {
     case kSM:
       nus_pmns = new nusquids::nuSQUIDS(E_range, NuOscillator::kTau, nusquids::neutrino, false);
       nubars_pmns = new nusquids::nuSQUIDS(E_range, NuOscillator::kTau, nusquids::neutrino, false);
@@ -201,8 +195,8 @@ void OscProbCalcerNuSQUIDSLinear::SetupPropagator() {
       break;
 
     case kLIV:
-      nus_LV = new nusquids::nuSQUIDSLV(E_range, NuOscillator::kTau, nusquids::neutrino, false);
-      nubars_LV = new nusquids::nuSQUIDSLV(E_range, NuOscillator::kTau, nusquids::neutrino, false);
+      nus_LIV = new nusquids::nuSQUIDSLV(E_range, NuOscillator::kTau, nusquids::neutrino, false);
+      nubars_LIV = new nusquids::nuSQUIDSLV(E_range, NuOscillator::kTau, nusquids::neutrino, false);
       nus_base = nus_decoh;
 
       break;
@@ -230,7 +224,7 @@ void OscProbCalcerNuSQUIDSLinear::SetupPropagator() {
   nubars_base->Set_rel_error(nubars_rel_error);
   nubars_base->Set_abs_error(nubars_abs_error);
 
-  switch() {
+  switch(fBSMModel) {
     case kSM:
 
     break;
@@ -265,7 +259,7 @@ void OscProbCalcerNuSQUIDSLinear::SetupPropagator() {
 
 //  nus_NSI = new nuSQUIDSNSI(eps_mutau, E_range, NuOscillator::kTau, nusquids::neutrino, true);
 
-//  nus_LV = new nusquids::nuSQUIDSLV(E_range, NuOscillator::kTau, nusquids::neutrino, false);
+//  nus_LIV = new nusquids::nuSQUIDSLV(E_range, NuOscillator::kTau, nusquids::neutrino, false);
 
 //  nus_pmns = new nusquids::nuSQUIDS(E_range, NuOscillator::kTau, nusquids::neutrino, false);
 
@@ -355,7 +349,7 @@ void OscProbCalcerNuSQUIDSLinear::CalculateProbabilities(const std::vector<FLOAT
       //Set the initial state in nuSQuIDS object
       nus_base->Set_initial_state(inistate,nusquids::flavor);
 
-    switch() {
+    switch(fBSMModel) {
       case kSM:
       nus_pmns->EvolveState();
 //      SetupPropNuSQUIDSSM(fBSMModel);
@@ -448,7 +442,7 @@ void OscProbCalcerNuSQUIDSLinear::CalculateProbabilities(const std::vector<FLOAT
       //Set the initial state in nuSQuIDS object
       nubars_base->Set_initial_state(inistate,nusquids::flavor);
 
-      switch() {
+      switch(fBSMModel) {
       case kSM:
 //      SetupPropNuSQUIDSSM(fBSMModel);
 //      CalcProbNuSQUIDSSM(fBSMModel);
@@ -523,25 +517,25 @@ void OscProbCalcerNuSQUIDSLinear::CalculateProbabilities(const std::vector<FLOAT
   }
 }
 
-void OscProbCalcerNuSQUIDSLinear::CalcProbNuSQUIDSSM() {
+//void OscProbCalcerNuSQUIDSLinear::CalcProbNuSQUIDSSM() {
 
-}
+//}
 
 int OscProbCalcerNuSQUIDSLinear::PMNS_StrToInt(std::string PMNSType) {
   return -1;
 }
 
 int OscProbCalcerNuSQUIDSLinear::BSMModel_StrToInt(std::string BSMModel) {
-  if (BSMModel = "SM") {
+  if (BSMModel == "SM") {
     return kSM;
   }
-  else if (BSMModel = "Decoherence") {
+  else if (BSMModel == "Decoherence") {
     return kDecoherence;
   }
-  else if (BSMModel = "LIV") {
+  else if (BSMModel == "LIV") {
     return kLIV;
   }
-  else if (BSMModel = "NSI") {
+  else if (BSMModel == "NSI") {
     return kNSI;
   }
   else {
