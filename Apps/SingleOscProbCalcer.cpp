@@ -26,45 +26,87 @@ int main(int argc, char **argv) {
 
   bool PrintWeights = true;
 
+  bool useLogEnergy = true;
   float E_min = 1e-1;
-  float E_max = 1.0e4;
-  int E_Nbins = 1001; // E_Nbins equally spaced in log
+  float E_max = 1.0e2;
+  int E_Nbins = 101; // E_Nbins equally spaced in log
+
+  bool useLogBaseline = false;
+  float BL_Min=100.0;
+  float BL_Max=1000.0;
+  int BL_Nbins = 101; // Number of baselines
 
 //  std::vector<FLOAT_T> EnergyArray = logspace(E_min, E_max, E_Nbins);
   std::vector<FLOAT_T> CosineZArray = linspace(-1.0,1.0,15);
 
-std::vector<double> EnergyArray(E_Nbins);
-double logE_min = std::log10(E_min);
-double logE_max = std::log10(E_max);
-double dlogE = (logE_max - logE_min)/(E_Nbins-1);
+  std::vector<double> EnergyArray(E_Nbins);
+  std::vector<double> E_Edges(E_Nbins+1);
 
-for (int i=0; i<E_Nbins; ++i) {
+  if (useLogEnergy) {
+  double logE_min = std::log10(E_min);
+  double logE_max = std::log10(E_max);
+  double dlogE = (logE_max - logE_min)/(E_Nbins-1);
+
+  for (int i=0; i<E_Nbins; ++i) {
     EnergyArray[i] = std::pow(10, logE_min + i*dlogE);
-}
+  }
 
-// Compute bin edges from bin centers
-std::vector<double> E_edges(E_Nbins+1);
-for (int i=0; i<E_Nbins-1; ++i) {
-    E_edges[i+1] = std::sqrt(EnergyArray[i]*EnergyArray[i+1]); // geometric mean
-}
-E_edges[0] = EnergyArray[0]*EnergyArray[0]/E_edges[1];           // first edge
-E_edges[E_Nbins] = EnergyArray[E_Nbins-1]*EnergyArray[E_Nbins-1]/E_edges[E_Nbins-1]; // last edge
+  // Compute bin edges from bin centers
+  for (int i=0; i<E_Nbins-1; ++i) {
+    E_Edges[i+1] = std::sqrt(EnergyArray[i]*EnergyArray[i+1]); // geometric mean
+  }
+  E_Edges[0] = EnergyArray[0]*EnergyArray[0]/E_Edges[1];           // first edge
+  E_Edges[E_Nbins] = EnergyArray[E_Nbins-1]*EnergyArray[E_Nbins-1]/E_Edges[E_Nbins-1]; // last edge
+
+  } else {
+    // --- Linear-spaced energy ---
+    double dE = (E_max - E_min)/(E_Nbins-1);
+
+    for (int i=0; i<E_Nbins; ++i) {
+      EnergyArray[i] = E_min + i*dE;
+    }
+
+    // Bin edges, half-bin outside first/last center
+    double E_MinEdge = E_min - dE/2.0;
+    for (int i=0; i<=E_Nbins; ++i) {
+      E_Edges[i] = E_MinEdge + i*dE;
+    }
+  }
 
   std::cout << "EnergyArray.size() =" << EnergyArray.size() << std::endl;
   std::cout << "EnergyArray[0] =" << EnergyArray[0] << std::endl;
 
-  float BL_Min=100.0;
-  float BL_Max=1500.0;
-  int BL_num = 1001; // Number of baselines
+  std::vector<double> BL_Edges(BL_Nbins+1);
 
-  // Now compute the histogram edges so that bin centers = these values
-  double BL_MinEdge = BL_Min - ( (BL_Max - BL_Min) / (BL_num - 1) ) / 2.0;
-  double BL_MaxEdge = BL_Max + ( (BL_Max - BL_Min) / (BL_num - 1) ) / 2.0;
+  if (useLogBaseline) {
+    // --- Log-spaced baseline (centers + geometric mean for edges) ---
+    std::vector<double> BLLogArray(BL_Nbins);
+    double logBL_Min = std::log10(BL_Min);
+    double logBL_Max = std::log10(BL_Max);
+    double dlogBL = (logBL_Max - logBL_Min)/(BL_Nbins-1);
 
-  //std::vector<FLOAT_T> BaselineArray = linspace(BL_Min,BL_Max,BL_num);
+  for (int i=0; i<BL_Nbins; ++i) {
+    BLLogArray[i] = std::pow(10, logBL_Min + i*dlogBL);
+  }
 
-//  std::cout << "BaselineArray.size() =" << BaselineArray.size() << std::endl;
-//  std::cout << "BaselineArray[0] =" << BaselineArray[0] << std::endl;
+  for (int i=0; i<BL_Nbins-1; ++i) {
+    BL_Edges[i+1] = std::sqrt(BLLogArray[i]*BLLogArray[i+1]); // geometric mean
+  }
+  BL_Edges[0] = BLLogArray[0]*BLLogArray[0]/BL_Edges[1];
+  BL_Edges[BL_Nbins] = BLLogArray[BL_Nbins-1]*BLLogArray[BL_Nbins-1]/BL_Edges[BL_Nbins-1];
+
+  } else {
+
+    double dBL = (BL_Max - BL_Min)/(BL_Nbins-1);
+
+    // First and last edges are half a bin outside the first/last center
+    double BL_MinEdge = BL_Min - dBL/2.0;
+    double BL_MaxEdge = BL_Max + dBL/2.0;
+
+    for (int i=0; i<=BL_Nbins; ++i) {
+      BL_Edges[i] = BL_MinEdge + i*dBL;
+    }
+  }
 
   std::vector<FLOAT_T> OscParams_Basic = ReturnOscParams_Basic();
   std::vector<FLOAT_T> OscParams_Atm = ReturnOscParams_Atm();
@@ -95,9 +137,7 @@ E_edges[E_Nbins] = EnergyArray[E_Nbins-1]*EnergyArray[E_Nbins-1]/E_edges[E_Nbins
   std::cout << "========================================================" << std::endl;
   std::cout << "Starting reweight in executable" << std::endl;
 
-
-
-struct rusage usage;
+  struct rusage usage; // For memory check
 
   //Don't plot by default
   bool Plot = true;
@@ -106,7 +146,6 @@ struct rusage usage;
     TCanvas* Canv = new TCanvas;
     TString OutputName = "Probability.pdf";
     Canv->Print(OutputName+"[");
-    Canv->SetLogx(true);
 
     TFile f("Probability.root","RECREATE");
 
@@ -119,60 +158,52 @@ struct rusage usage;
         }
     };
 
-// Pre-create histograms in a vector
-std::vector<TH2D*> hists;
-//for (int NuType = 0; NuType < 2; ++NuType) {
-//    for (int GenFlav = 0; GenFlav < 3; ++GenFlav) {
-//        for (int DetFlav = 0; DetFlav < 3; ++DetFlav) {
+  // Pre-create histograms in a vector
+  std::vector<TH2D*> hists;
 
-
-for (int iNuType = 0; iNuType < 2; iNuType++) {
+  for (int iNuType = 0; iNuType < 2; iNuType++) {
     int NuType = (iNuType == 1) ? -1 : 1;
 
     for (int iGenFlav = 1; iGenFlav < 4; iGenFlav++) {
-        for (int iDetFlav = 1; iDetFlav < 4; iDetFlav++) {
+      for (int iDetFlav = 1; iDetFlav < 4; iDetFlav++) {
+        int GenFlav = iGenFlav * NuType;
+        int DetFlav = iDetFlav * NuType;
 
-	            int GenFlav = iGenFlav * NuType;
-            int DetFlav = iDetFlav * NuType;
+        TString nameT = Form("2D_OscProb_%i_%i_%i", NuType, GenFlav, DetFlav);
+        TString title = TString(Form("P_{%s#rightarrow%s};Energy [GeV];Baseline [km]",
+            NuFlavGreek(std::abs(GenFlav)),
+            NuFlavGreek(std::abs(DetFlav))));
 
-TString nameT = Form("2D_OscProb_%i_%i_%i", NuType, GenFlav, DetFlav);
-
-            TString title = TString(Form("P_{%s#rightarrow%s};Energy [GeV];Baseline [km]",
-                NuFlavGreek(std::abs(GenFlav)),
-                NuFlavGreek(std::abs(DetFlav))));
-
-		TH2D* h = new TH2D(nameT, title,
-//                               EnergyArray.size()-1, EnergyArray.data(),
-                   E_Nbins, E_edges.data(),
-                   BL_num, BL_MinEdge, BL_MaxEdge);
-            h->SetDirectory(&f);
-            hists.push_back(h);
-        }
+        TH2D* h = new TH2D(nameT, title,
+            E_Nbins, E_Edges.data(),
+            BL_Nbins, BL_Edges.data());
+	h->SetDirectory(&f);
+        hists.push_back(h);
+      }
     }
-}
+  }
 
-auto histIndex = [](int NuType, int GenFlav, int DetFlav) {
+  auto histIndex = [](int NuType, int GenFlav, int DetFlav) {
     int nuIndex = (NuType > 0) ? 0 : 1;  // +1 → 0, -1 → 1
     int g = GenFlav - 1;                 // 1..3 → 0..2
     int d = DetFlav - 1;                 // 1..3 → 0..2
     return nuIndex * 9 + g * 3 + d;      // 2*3*3 = 18 histograms
-};
+  };
 
-int lastNuType = -1;
-int lastGenFlav = -1;
-int lastDetFlav = -1;
-int xBin = 1;
+  int lastNuType = -1;
+  int lastGenFlav = -1;
+  int lastDetFlav = -1;
+  int xBin = 1;
 
-  for (int iBL=0;iBL<BL_num;iBL++) {
-//    FLOAT_T BL = iBL*10;
-
+  for (int iBL=0;iBL<BL_Nbins;iBL++) {
   int yBin = iBL+1;
 
-  double baseline = BL_MinEdge + (iBL + 0.5) * ( (BL_MaxEdge - BL_MinEdge) / BL_num );
+  // Set baseline
+  double baseline = 0.5 * (BL_Edges[iBL] + BL_Edges[iBL+1]);
   OscParams_Beam_wYe_wDeco[6] = baseline;
 
   for (int i=0; i < OscParams_Beam_wYe_wDeco.size(); i++) {
-  std::cout << "OscParams_Beam_wYe_wDeco[ " << i << " ] =" << OscParams_Beam_wYe_wDeco[i] << std::endl;
+    std::cout << "OscParams_Beam_wYe_wDeco[ " << i << " ] =" << OscParams_Beam_wYe_wDeco[i] << std::endl;
   }
 
   // Reweight and calculate oscillation probabilities
@@ -228,7 +259,9 @@ int xBin = 1;
      std::cout << "lastDetFlav =" << lastDetFlav << std::endl;
 
       Hist->SetBinContent(xBin,yBin,OscProbs[iOscProb].Probability);
-getrusage(RUSAGE_SELF, &usage); std::cout << "Memory (MB): " << usage.ru_maxrss/1024.0 << std::endl;
+
+      // Check memory
+      getrusage(RUSAGE_SELF, &usage); std::cout << "Memory (MB): " << usage.ru_maxrss/1024.0 << std::endl;
       ++xBin;
     }
   }
@@ -239,6 +272,9 @@ getrusage(RUSAGE_SELF, &usage); std::cout << "Memory (MB): " << usage.ru_maxrss/
   std::cout << "========================================================" << std::endl;
 
   for ( auto &h : hists ) {
+    Canv->SetLogx(useLogEnergy);
+    Canv->SetLogy(useLogBaseline);
+
     h->SetStats(kFALSE);
     h->Write(); // Write to ROOT file
     h->Draw("COLZ");
@@ -248,6 +284,8 @@ getrusage(RUSAGE_SELF, &usage); std::cout << "Memory (MB): " << usage.ru_maxrss/
 
     int yBin = h->GetYaxis()->FindBin(150.9); // DUNE baseline is 1284.9; T2K baseline in 295.0
     TH1D* hEnergySlice = h->ProjectionX(Form("%s_Eslice", h->GetName()), yBin, yBin);
+    Canv->SetLogx(useLogEnergy);
+    Canv->SetLogy(false);
 
     // Optional: set title
     hEnergySlice->SetTitle(Form("%s at baseline = %.1f km; Energy [GeV]; %s",
@@ -262,6 +300,8 @@ getrusage(RUSAGE_SELF, &usage); std::cout << "Memory (MB): " << usage.ru_maxrss/
 
     int xBin = h->GetXaxis()->FindBin(2.0);
     TH1D* hBaselineSlice = h->ProjectionY(Form("%s_Bslice", h->GetName()), xBin, xBin);
+    Canv->SetLogx(useLogBaseline);
+    Canv->SetLogy(false);
 
     // Optional: set title
     hBaselineSlice->SetTitle(Form("%s at energy = %.1f GeV; Baseline [km]; %s",
@@ -269,6 +309,7 @@ getrusage(RUSAGE_SELF, &usage); std::cout << "Memory (MB): " << usage.ru_maxrss/
     hBaselineSlice->GetXaxis()->SetTitleOffset(1.3);
 
     hBaselineSlice->SetStats(kFALSE);
+//    hBaselineSlice->GetYaxis()->SetRangeUser(0.0, 1.0); // force y-axis from 0 to 1
     hBaselineSlice->Write();
     hBaselineSlice->Draw();
     Canv->Print("Probability.pdf");
