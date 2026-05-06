@@ -18,23 +18,64 @@ using std::chrono::duration;
 using std::chrono::milliseconds;
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::cerr << argv[0] << " InputConfig.yaml" << std::endl;
+  if (argc < 2) {
+    std::cerr << argv[0] << " InputConfig.yaml [key=value ...]" << std::endl;
+    std::cerr << "  keys: sin2theta12 sin2theta23 sin2theta13 dm21 dm32 dcp rho Ye gamma0 n E0" << std::endl;
     throw std::runtime_error("Invalid setup");
   }
   std::string OscProbCalcerConfigname = argv[1];
 
+  // CLI overrides for OscParams_Beam_wYe_wDeco. Index 6 (baseline) is loop-controlled
+  // below, so it's intentionally absent from the key list.
+  struct KeyIdx { const char* key; int idx; };
+  static const KeyIdx KEYS[] = {
+    {"sin2theta12", 0}, {"sin2theta23", 1}, {"sin2theta13", 2},
+    {"dm21", 3},        {"dm32", 4},        {"dcp", 5},
+    {"rho", 7},         {"Ye", 8},
+    {"gamma0", 9},      {"n", 10},          {"E0", 11},
+  };
+  std::vector<std::pair<int,double>>            Overrides;
+  std::vector<std::pair<std::string,std::string>> OverrideTags;
+  for (int ai = 2; ai < argc; ++ai) {
+    std::string tok = argv[ai];
+    size_t eq = tok.find('=');
+    if (eq == std::string::npos) {
+      std::cerr << "Bad arg '" << tok << "' (expected key=value)" << std::endl;
+      throw std::runtime_error("Invalid setup");
+    }
+    std::string k = tok.substr(0, eq);
+    std::string v = tok.substr(eq + 1);
+    int idx = -1;
+    for (auto const& ki : KEYS) {
+      if (k == ki.key) { idx = ki.idx; break; }
+    }
+    if (idx < 0) {
+      std::cerr << "Unknown key '" << k << "'. Valid keys:";
+      for (auto const& ki : KEYS) std::cerr << " " << ki.key;
+      std::cerr << std::endl;
+      throw std::runtime_error("Invalid setup");
+    }
+    Overrides.emplace_back(idx, std::stod(v));
+    OverrideTags.emplace_back(k, v);
+  }
+
+  // Filename tag built from overridden keys; empty when no overrides → original names.
+  std::string Tag;
+  for (auto const& kv : OverrideTags) Tag += "_" + kv.first + "=" + kv.second;
+
   bool PrintWeights = true;
 
   bool useLogEnergy = true;
-  float E_min = 1e-1;
-  float E_max = 1.0e2;
-  int E_Nbins = 101; // E_Nbins equally spaced in log
+  float E_min = 0.1;
+  float E_max = 10000.01;
+  int E_Nbins = 1001; // E_Nbins equally spaced in log
 
   bool useLogBaseline = false;
-  float BL_Min=100.0;
-  float BL_Max=1000.0;
-  int BL_Nbins = 101; // Number of baselines
+  float BL_Min=10.0;
+  float BL_Max=1510.0;
+
+  int BL_Nbins = 1001; // Number of baselines
+  //int BL_Nbins = 2; // when plottting single baseline fast (also change "baseline = ..." below)
 
 //  std::vector<FLOAT_T> EnergyArray = logspace(E_min, E_max, E_Nbins);
   std::vector<FLOAT_T> CosineZArray = linspace(-1.0,1.0,15);
@@ -113,6 +154,7 @@ int main(int argc, char **argv) {
   std::vector<FLOAT_T> OscParams_Beam_woYe = ReturnOscParams_Beam_woYe();
   std::vector<FLOAT_T> OscParams_Beam_wYe = ReturnOscParams_Beam_wYe();
   std::vector<FLOAT_T> OscParams_Beam_wYe_wDeco = ReturnOscParams_Beam_wYe_wDeco();
+  for (auto const& ov : Overrides) OscParams_Beam_wYe_wDeco[ov.first] = ov.second;
   std::vector<FLOAT_T> OscParams_Beam_wYe_wLIV = ReturnOscParams_Beam_wYe_wLIV();
 
   std::cout << "========================================================" << std::endl;
@@ -144,10 +186,11 @@ int main(int argc, char **argv) {
 
   if (Plot) {
     TCanvas* Canv = new TCanvas;
-    TString OutputName = "Probability.pdf";
+    TString OutputName     = TString("Probability") + Tag.c_str() + ".pdf";
+    TString OutputRootName = TString("Probability") + Tag.c_str() + ".root";
     Canv->Print(OutputName+"[");
 
-    TFile f("Probability.root","RECREATE");
+    TFile f(OutputRootName,"RECREATE");
 
     auto NuFlavGreek = [](int flav){
         switch(flav) {
@@ -200,6 +243,8 @@ int main(int argc, char **argv) {
 
   // Set baseline
   double baseline = 0.5 * (BL_Edges[iBL] + BL_Edges[iBL+1]);
+  //baseline = 295.0; // T2K
+  //baseline = 1284.9; // DUNE
   OscParams_Beam_wYe_wDeco[6] = baseline;
 
   for (int i=0; i < OscParams_Beam_wYe_wDeco.size(); i++) {
@@ -279,10 +324,10 @@ int main(int argc, char **argv) {
     h->Write(); // Write to ROOT file
     h->Draw("COLZ");
     h->GetXaxis()->SetTitleOffset(1.3);
-    Canv->Print("Probability.pdf"); // 2D plot to pdf
+    Canv->Print(OutputName); // 2D plot to pdf
     //Canv->Write(); // 2D canvas plot to root
 
-    int yBin = h->GetYaxis()->FindBin(150.9); // DUNE baseline is 1284.9; T2K baseline in 295.0
+    int yBin = h->GetYaxis()->FindBin(295.0); // DUNE baseline is 1284.9; T2K baseline in 295.0
     TH1D* hEnergySlice = h->ProjectionX(Form("%s_Eslice", h->GetName()), yBin, yBin);
     Canv->SetLogx(useLogEnergy);
     Canv->SetLogy(false);
@@ -295,10 +340,10 @@ int main(int argc, char **argv) {
     hEnergySlice->SetStats(kFALSE);
     hEnergySlice->Write();
     hEnergySlice->Draw();
-    Canv->Print("Probability.pdf");
+    Canv->Print(OutputName);
     delete hEnergySlice;
 
-    int xBin = h->GetXaxis()->FindBin(2.0);
+    int xBin = h->GetXaxis()->FindBin(0.6);
     TH1D* hBaselineSlice = h->ProjectionY(Form("%s_Bslice", h->GetName()), xBin, xBin);
     Canv->SetLogx(useLogBaseline);
     Canv->SetLogy(false);
@@ -312,7 +357,7 @@ int main(int argc, char **argv) {
 //    hBaselineSlice->GetYaxis()->SetRangeUser(0.0, 1.0); // force y-axis from 0 to 1
     hBaselineSlice->Write();
     hBaselineSlice->Draw();
-    Canv->Print("Probability.pdf");
+    Canv->Print(OutputName);
     delete hBaselineSlice;
   }
   Canv->Print(OutputName+"]");
@@ -320,3 +365,4 @@ int main(int argc, char **argv) {
 } // Plot
 
 }
+

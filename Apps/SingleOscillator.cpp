@@ -37,6 +37,7 @@ int main(int argc, char **argv) {
   std::vector<FLOAT_T> OscParams_Atm = ReturnOscParams_Atm();
   std::vector<FLOAT_T> OscParams_Beam_woYe = ReturnOscParams_Beam_woYe();
   std::vector<FLOAT_T> OscParams_Beam_wYe = ReturnOscParams_Beam_wYe();
+  std::vector<FLOAT_T> OscParams_Beam_wYe_wDeco = ReturnOscParams_Beam_wYe_wDeco();
 
   std::cout << "========================================================" << std::endl;
   std::cout << "Starting setup in executable" << std::endl;
@@ -80,6 +81,8 @@ int main(int argc, char **argv) {
     Oscillator->CalculateProbabilities(OscParams_Atm);
   } else if (Oscillator->ReturnNOscParams() == (int)OscParams_Basic.size()) {
     Oscillator->CalculateProbabilities(OscParams_Basic);
+  } else if (Oscillator->ReturnNOscParams() == (int)OscParams_Beam_wYe_wDeco.size()) {
+    Oscillator->CalculateProbabilities(OscParams_Beam_wYe_wDeco);
   } else {
     std::cerr << "Did not find viable oscillation parameters to hand to the oscillation probability calculater" << std::endl;
     std::cerr << "Oscillator->ReturnNOscParams():" << Oscillator->ReturnNOscParams() << std::endl;
