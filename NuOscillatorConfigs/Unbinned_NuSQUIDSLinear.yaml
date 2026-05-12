@@ -5,7 +5,7 @@ General:
 
 OscProbCalcerSetup:
   ImplementationName: "NuSQUIDSLinear"
-  PrecisionLimit: 1e-5
+  PrecisionLimit: 1e-2
   NumNeutrinoFlavours: 3
   OscModel: "Decoherence" # SM, Decoherence, LIV, NSI
   #NSIMuTauCoupling: 1.0e-2

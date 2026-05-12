@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=osc_probs
 #SBATCH --account=def-blairt2k
-#SBATCH --time=0-12:00:00
+#SBATCH --time=0-23:59:00
 #SBATCH --mem=16G
-#SBATCH --cpus-per-task=8
-#SBATCH --array=0-25
+#SBATCH --cpus-per-task=16
+#SBATCH --array=0-33
 #SBATCH --output=logs/osc_probs_%A_%a.out
 #SBATCH --error=logs/osc_probs_%A_%a.err
 
@@ -45,6 +45,14 @@ names=(
   setB_g0_dm21_low
   setB_g0_dm21_high
   setB_g0_dcp_opp
+  setA_g0_r0
+  setA_r0
+  setB_g0_r0
+  setB_r0
+  setA_all_osc_params_zero
+  setA_all_osc_params_zero_vacuum
+  set_all_osc_params_zero
+  set_all_osc_params_zero_vacuum
 )
 
 params=(
@@ -100,6 +108,22 @@ params=(
   "sin2theta12=0.307 sin2theta23=0.450 sin2theta13=0.022 dm21=8.0e-5  dm32=2.494e-3 dcp=0.0    rho=2.6 Ye=0.5 gamma0=0.0     n=-2.0 E0=1.0"
   # 25: setB_g0_dcp_opp
   "sin2theta12=0.307 sin2theta23=0.450 sin2theta13=0.022 dm21=7.53e-5 dm32=2.494e-3 dcp=3.141592654 rho=2.6 Ye=0.5 gamma0=0.0 n=-2.0 E0=1.0"
+  # 26: setA_g0_r0
+  "sin2theta12=0.307 sin2theta23=0.561 sin2theta13=0.022 dm21=7.53e-5 dm32=2.494e-3 dcp=-1.601 rho=0.0 Ye=0.5 gamma0=0.0 n=-2.0 E0=1.0"
+  # 27: setA_r0
+  "sin2theta12=0.307 sin2theta23=0.561 sin2theta13=0.022 dm21=7.53e-5 dm32=2.494e-3 dcp=-1.601 rho=0.0 Ye=0.5 gamma0=5.0e-15 n=-2.0 E0=1.0"
+  # 28: setB_g0_r0
+  "sin2theta12=0.307 sin2theta23=0.450 sin2theta13=0.0220 dm21=7.53e-5 dm32=2.494e-3 dcp=0.0 rho=0.0 Ye=0.5 gamma0=0.0 n=-2.0 E0=1.0"
+  # 29: setB_r0
+  "sin2theta12=0.307 sin2theta23=0.450 sin2theta13=0.0220 dm21=7.53e-5 dm32=2.494e-3 dcp=0.0 rho=0.0 Ye=0.5 gamma0=5.0e-15 n=-2.0 E0=1.0"
+  # 30: setA_all_osc_params_zero
+  "sin2theta12=0.0 sin2theta23=0.0 sin2theta13=0.0 dm21=0.0 dm32=0.0 dcp=0.0 rho=2.6 Ye=0.5 gamma0=5.0e-15 n=-2.0 E0=1.0"
+  # 31: setA_all_osc_params_zero_vacuum
+  "sin2theta12=0.0 sin2theta23=0.0 sin2theta13=0.0 dm21=0.0 dm32=0.0 dcp=0.0 rho=0.0 Ye=0.5 gamma0=5.0e-15 n=-2.0 E0=1.0"
+  # 32: set_all_osc_params_zero
+  "sin2theta12=0.0 sin2theta23=0.0 sin2theta13=0.0 dm21=0.0 dm32=0.0 dcp=0.0 rho=2.6 Ye=0.5 gamma0=0.0 n=-2.0 E0=1.0" 
+  # 33: set_all_osc_params_zero_vacuum
+  "sin2theta12=0.0 sin2theta23=0.0 sin2theta13=0.0 dm21=0.0 dm32=0.0 dcp=0.0 rho=0.0 Ye=0.5 gamma0=0.0 n=-2.0 E0=1.0"
 )
 
 NAME=${names[$SLURM_ARRAY_TASK_ID]}

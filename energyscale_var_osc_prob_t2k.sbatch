@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=osc_probs
 #SBATCH --account=def-blairt2k
-#SBATCH --time=0-12:00:00
+#SBATCH --time=0-23:59:00
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=16
 #SBATCH --array=0-6
